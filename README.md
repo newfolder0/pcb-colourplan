@@ -44,10 +44,10 @@ Three input formats, all parsed in-browser into one common `Board` model:
 - **KiCAD `.kicad_pcb`** (KiCAD 7/8/9, s-expression) - the richest source:
   reference/value/footprint, side, SMD vs through-hole, DNP, placement, footprint
   outlines, board outline, and propagated schematic fields.
-- **IPC-2581** (`.xml`) - the open exchange standard exported by Altium, KiCAD 8+,
-  Cadence Allegro and Zuken. The simplest way to use the tool with a non-KiCAD CAD.
-- **ODB++** (`.tgz`/`.tar.gz`/`.zip`) - the Siemens exchange format exported by
-  Altium, Cadence and Zuken.
+- **IPC-2581** (`.xml`) - the open exchange standard exported by Altium, KiCAD 8+, and
+  Cadence Allegro. The simplest way to use the tool with a non-KiCAD CAD.
+- **ODB++** (`.tgz`/`.tar.gz`/`.zip`) - the Siemens exchange format and defacto
+  standard used by many in the industry, exported by Altium and Cadence.
 
 Adding a format is just a `format -> Board` adapter (`src/core/import/`); the BOM,
 renderer and colour-plan pipeline are shared. The IPC-2581/ODB++ adapters are
