@@ -1,0 +1,474 @@
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Top bar */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex: 0 0 auto;
+}
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.brand .logo {
+  color: var(--accent);
+  font-size: 20px;
+}
+.file-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.file-info .fname {
+  font-weight: 600;
+}
+button.link {
+  background: none;
+  border: none;
+  color: var(--accent);
+  padding: 0;
+  text-decoration: underline;
+}
+
+/* Click-through disclaimer gate */
+.disclaimer-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(20, 24, 31, 0.55);
+}
+.disclaimer-card {
+  background: #fff;
+  border-radius: 12px;
+  max-width: 560px;
+  width: 100%;
+  padding: 24px 26px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.35);
+  /* Keep the card within the viewport and let long content (e.g. the full data
+     disclosure) scroll, so the action buttons are always reachable. */
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+}
+.gate-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+.gate-actions .primary {
+  width: 100%;
+}
+.selfhost-cmd {
+  background: #f4f5f7;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-x: auto;
+}
+.disclaimer-card h2 {
+  margin: 0 0 12px;
+  color: #8a3b00;
+}
+.disclaimer-card p {
+  margin: 0 0 16px;
+  line-height: 1.5;
+  color: var(--text);
+}
+.disclaimer-card a {
+  color: var(--accent);
+}
+.gate-remember {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 14px;
+  margin-bottom: 6px;
+  cursor: pointer;
+}
+.gate-note {
+  margin: 0 0 16px 24px;
+}
+.disclaimer-card .primary {
+  width: 100%;
+}
+
+.disclaimer {
+  flex: 0 0 auto;
+  background: #fff4e5;
+  color: #7a4f01;
+  border-top: 1px solid #f0d9a8;
+  padding: 6px 16px;
+  font-size: 12px;
+  line-height: 1.35;
+  text-align: center;
+}
+.disclaimer strong {
+  color: #8a3b00;
+}
+.disclaimer .copyright {
+  margin-top: 6px;
+  opacity: 0.85;
+}
+
+.banner {
+  padding: 8px 16px;
+  font-size: 14px;
+}
+.banner.error {
+  background: #fde8e8;
+  color: #9b1c1c;
+  border-bottom: 1px solid #f5c2c2;
+}
+
+/* Landing */
+.landing {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+}
+/* Fills the whole grey landing area and acts as the drop target, so a file can
+   be dropped anywhere around the dashed box (but not the header/footer). */
+.dropzone-area {
+  flex: 1 1 auto;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  transition: background 0.15s;
+}
+.dropzone-area--active {
+  background: #eef4ff;
+}
+.dropzone {
+  width: min(520px, 90vw);
+  min-height: 220px;
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  background: var(--panel);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-align: center;
+  color: var(--muted);
+  transition: border-color 0.15s, background 0.15s;
+}
+.dropzone strong {
+  color: var(--text);
+  font-size: 18px;
+}
+.dropzone--active {
+  border-color: var(--accent);
+  background: #eef4ff;
+}
+
+/* Workspace */
+.workspace {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 0;
+}
+.workspace .left,
+.workspace .right {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.workspace .left {
+  border-right: 1px solid var(--border);
+}
+
+/* Board panel */
+.board-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.board-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.seg {
+  display: inline-flex;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.seg button {
+  border: none;
+  background: var(--panel);
+  padding: 4px 12px;
+}
+.seg button.on {
+  background: var(--accent);
+  color: #fff;
+}
+.seg button:disabled {
+  color: #bbb;
+  cursor: not-allowed;
+}
+.board-canvas {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 12px;
+  overflow: hidden;
+}
+.board-canvas svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.board-canvas .fp {
+  cursor: pointer;
+}
+.board-canvas .fp-hover line,
+.board-canvas .fp-hover path,
+.board-canvas .fp-hover circle {
+  stroke: #00b3ff !important;
+  stroke-width: 0.3 !important;
+}
+
+/* BOM panel */
+.bom-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+.bom-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+.search {
+  flex: 1 1 auto;
+  max-width: 280px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.bom-scroll {
+  flex: 1 1 auto;
+  overflow: auto;
+  min-height: 0;
+}
+table.bom {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 13px;
+}
+table.bom thead th {
+  position: sticky;
+  top: 0;
+  background: #eef0f3;
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  z-index: 1;
+}
+th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+table.bom td {
+  padding: 5px 8px;
+  border-bottom: 1px solid #eceef1;
+  white-space: nowrap;
+}
+table.bom tbody tr {
+  cursor: pointer;
+}
+table.bom tbody tr:hover {
+  background: #eef4ff;
+}
+table.bom tbody tr.selected {
+  background: #e6f0ff;
+}
+table.bom tbody tr.dnp td {
+  color: var(--muted);
+  font-style: italic;
+}
+.refs {
+  max-width: 260px;
+  display: inline-block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  vertical-align: bottom;
+}
+.swatch-col {
+  width: 18px;
+  padding: 0 4px;
+}
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.view-tabs button {
+  padding: 4px 14px;
+}
+
+/* Plan builder */
+.plan-main {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.plan-builder {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  height: 100%;
+  min-height: 0;
+}
+.plan-controls {
+  border-right: 1px solid var(--border);
+  background: var(--panel);
+  padding: 14px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.plan-controls h3 {
+  margin: 0;
+}
+.plan-controls .row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+}
+.plan-controls select {
+  padding: 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.plan-controls .check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+}
+.plan-controls section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+.plan-controls .sec-title {
+  font-weight: 600;
+  font-size: 13px;
+}
+.plan-controls .tb {
+  padding: 5px 7px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 13px;
+  width: 100%;
+}
+.plan-controls .tb-row {
+  display: flex;
+  gap: 6px;
+}
+button.primary {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-weight: 600;
+}
+button.primary:disabled {
+  background: #9bb8ee;
+  cursor: not-allowed;
+}
+.plan-summary {
+  margin-top: -4px;
+}
+.legend-edit {
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.legend-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.legend-row .lg-val {
+  flex: 1 1 auto;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.plan-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: #e7e9ee;
+}
+.plan-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+.plan-nav button {
+  border: 1px solid var(--border);
+  background: #fff;
+  border-radius: 6px;
+  width: 30px;
+  height: 26px;
+}
+.plan-preview {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  padding: 28px;
+  overflow: hidden;
+}
+/* Fill the available space; the SVG's viewBox preserves the page aspect ratio
+   (xMidYMid meet) and centres the sheet, so it scales up as large as it can. */
+.plan-preview svg {
+  flex: 1 1 auto;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: block;
+  filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.18));
+}

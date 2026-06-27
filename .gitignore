@@ -1,0 +1,28 @@
+# Dependencies and build output
+node_modules
+dist
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local-only files (e.g. .env with DOMAIN)
+.env
+*.local
+
+# Customer IP - never commit real designs; keep only the synthetic test fixtures
+*.kicad_pcb
+*.tgz
+*.tar.gz
+*.odb
+!src/core/__fixtures__/*.kicad_pcb
+
+# OS / editor
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.sw?
+
+# Local agent config
+.claude/

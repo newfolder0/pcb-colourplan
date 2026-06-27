@@ -1,0 +1,44 @@
+# Front server for PCB Colour-Plan (Caddy).
+#
+# {$SITE_ADDRESS} comes from the DOMAIN env (docker-compose / .env):
+#   - a domain (e.g. pcb.example.com) -> automatic HTTPS via Let's Encrypt
+#   - ":80"                           -> plain HTTP, for local testing
+#
+# To receive Let's Encrypt expiry emails, add a global options block at the very
+# top of this file:   { email you@example.com }
+
+{$SITE_ADDRESS} {
+	root * /srv
+	encode zstd gzip
+
+	# Security headers on every response (mirrors the former nginx config).
+	header {
+		Content-Security-Policy "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; worker-src 'self' blob:; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+		X-Frame-Options "DENY"
+		Cross-Origin-Opener-Policy "same-origin"
+		Cross-Origin-Resource-Policy "same-origin"
+		Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()"
+		-Server
+	}
+
+	# Long-cache the content-hashed build assets.
+	@assets path /assets/*
+	header @assets Cache-Control "public, max-age=2592000, immutable"
+
+	# Opt-in anonymous telemetry -> same-origin collector service. Caddy sets
+	# X-Forwarded-For and forwards the User-Agent, so the collector is unchanged.
+	handle /collect {
+		reverse_proxy collector:8081
+	}
+
+	# Single-page app: serve a matching file, else fall back to index.html.
+	handle {
+		try_files {path} /index.html
+		file_server
+	}
+
+	# No `log` directive => Caddy writes no access log => visitor IPs are never
+	# logged (privacy; matches the old nginx `access_log off`).
+}

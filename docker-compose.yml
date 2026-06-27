@@ -1,0 +1,43 @@
+services:
+  web:
+    build:
+      context: .
+      args:
+        # Telemetry + consent wall ON (the hosted setup with the collector below).
+        # For a fully-local, telemetry-free, wall-free self-hosted instance, set
+        # this to "" and delete the `collector` service + `depends_on`.
+        VITE_TELEMETRY_ENDPOINT: /collect
+    image: pcb-colourplan
+    environment:
+      # A domain (e.g. pcb.example.com) makes Caddy auto-provision HTTPS via
+      # Let's Encrypt. ":80" (the default) serves plain HTTP for local testing.
+      # Set DOMAIN in a .env file next to this compose.
+      SITE_ADDRESS: ${DOMAIN:-:80}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # caddy_data MUST persist: it holds the Let's Encrypt certs/keys. Losing it
+      # forces re-issuance and can hit ACME rate limits.
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+    depends_on:
+      - collector
+
+  # Receives opt-in anonymous telemetry only. Not published to the host: it is
+  # reachable solely via Caddy's same-origin /collect proxy (see Caddyfile).
+  # Stores aggregate counts + event rows (no IP/User-Agent) under a named volume.
+  collector:
+    build: ./collector
+    image: pcb-colourplan-collector
+    restart: unless-stopped
+    expose:
+      - "8081"
+    volumes:
+      - collector-data:/app/data
+
+volumes:
+  collector-data:
+  caddy_data:
+  caddy_config:

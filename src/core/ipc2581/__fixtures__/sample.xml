@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<IPC-2581 revision="C" xmlns="http://webstds.ipc.org/2581">
+  <Content>
+    <DictionaryLineDesc units="MILLIMETER"/>
+  </Content>
+  <Ecad name="Sample Board">
+    <CadData>
+      <Step name="board">
+        <Profile>
+          <Polygon>
+            <PolyBegin x="0" y="0"/>
+            <PolyStepSegment x="100" y="0"/>
+            <PolyStepSegment x="100" y="80"/>
+            <PolyStepSegment x="0" y="80"/>
+            <PolyStepSegment x="0" y="0"/>
+          </Polygon>
+        </Profile>
+        <Package name="R_0402" type="OTHER">
+          <Outline>
+            <Polygon>
+              <PolyBegin x="-0.5" y="-0.3"/>
+              <PolyStepSegment x="0.5" y="-0.3"/>
+              <PolyStepSegment x="0.5" y="0.3"/>
+              <PolyStepSegment x="-0.5" y="0.3"/>
+              <PolyStepSegment x="-0.5" y="-0.3"/>
+            </Polygon>
+          </Outline>
+        </Package>
+        <Package name="C_0402" type="OTHER">
+          <Outline>
+            <Polygon>
+              <PolyBegin x="-0.5" y="-0.3"/>
+              <PolyStepSegment x="0.5" y="-0.3"/>
+              <PolyStepSegment x="0.5" y="0.3"/>
+              <PolyStepSegment x="-0.5" y="0.3"/>
+              <PolyStepSegment x="-0.5" y="-0.3"/>
+            </Polygon>
+          </Outline>
+        </Package>
+        <Package name="HDR_1x02" type="OTHER">
+          <Outline>
+            <Polygon>
+              <PolyBegin x="-1.27" y="-1.27"/>
+              <PolyStepSegment x="1.27" y="-1.27"/>
+              <PolyStepSegment x="1.27" y="3.81"/>
+              <PolyStepSegment x="-1.27" y="3.81"/>
+              <PolyStepSegment x="-1.27" y="-1.27"/>
+            </Polygon>
+          </Outline>
+          <Pin number="1">
+            <Hole diameter="1.0"/>
+          </Pin>
+        </Package>
+        <Component refDes="R1" packageRef="R_0402" layerRef="TOP" part="10k" mountType="SMT">
+          <Location x="20" y="20"/>
+          <Xform rotation="0"/>
+        </Component>
+        <Component refDes="R2" packageRef="R_0402" layerRef="TOP" part="10k" mountType="SMT">
+          <Location x="25" y="20"/>
+          <Xform rotation="90"/>
+        </Component>
+        <Component refDes="R3" packageRef="R_0402" layerRef="TOP" part="10k" mountType="SMT">
+          <Location x="30" y="20"/>
+          <Xform rotation="0"/>
+        </Component>
+        <Component refDes="C1" packageRef="C_0402" layerRef="TOP" part="10nF" mountType="SMT">
+          <Location x="40" y="30"/>
+          <Xform rotation="0"/>
+        </Component>
+        <Component refDes="C2" packageRef="C_0402" layerRef="BOTTOM" part="1nF" mountType="SMT">
+          <Location x="45" y="30"/>
+          <Xform rotation="0" mirror="true"/>
+        </Component>
+        <Component refDes="J1" packageRef="HDR_1x02" layerRef="TOP" part="Conn_01x02" mountType="THMT">
+          <Location x="60" y="40"/>
+          <Xform rotation="0"/>
+        </Component>
+      </Step>
+    </CadData>
+  </Ecad>
+  <Bom name="bom">
+    <BomItem OEMDesignNumberRef="10k">
+      <RefDes name="R1"/>
+      <RefDes name="R2"/>
+    </BomItem>
+    <BomItem OEMDesignNumberRef="10k">
+      <RefDes name="R3" populate="false"/>
+    </BomItem>
+    <BomItem OEMDesignNumberRef="10nF">
+      <RefDes name="C1"/>
+    </BomItem>
+    <BomItem OEMDesignNumberRef="1nF">
+      <RefDes name="C2"/>
+    </BomItem>
+    <BomItem OEMDesignNumberRef="Conn_01x02">
+      <RefDes name="J1"/>
+    </BomItem>
+  </Bom>
+</IPC-2581>

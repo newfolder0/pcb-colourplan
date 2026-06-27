@@ -1,0 +1,43 @@
+{
+  "name": "pcb-colourplan",
+  "version": "1.0.2",
+  "type": "module",
+  "license": "MIT",
+  "author": "Peter Bell",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run check-licenses && tsc -b && vite build && node scripts/generate-licenses.mjs",
+    "check-licenses": "license-checker --production --onlyAllow 'MIT;MIT-0;ISC;0BSD;BSD-2-Clause;BSD-3-Clause;Apache-2.0;Zlib;BlueOak-1.0.0;CC0-1.0;Unlicense;Python-2.0'",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@tanstack/react-table": "^8.21.3",
+    "fast-xml-parser": "^5.8.0",
+    "fflate": "^0.8.3",
+    "jspdf": "^4.2.1",
+    "nanotar": "^0.3.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "svg2pdf.js": "^2.5.0",
+    "zustand": "^5.0.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.12.3",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.3.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.6.0",
+    "license-checker": "^25.0.1",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.59.2",
+    "vite": "^8.0.12",
+    "vitest": "^4.1.8"
+  }
+}

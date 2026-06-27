@@ -1,0 +1,13 @@
+node_modules
+dist
+.git
+.claude
+*.log
+**/*.kicad_pcb
+!src/core/__fixtures__/*.kicad_pcb
+
+# Confidential demo material - keep out of the build context and image layers
+2026-06-05_first_demo/
+
+# Local env (DOMAIN etc.)
+.env
