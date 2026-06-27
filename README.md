@@ -1,3 +1,9 @@
+⚠ AI-slop tool ⚠
+
+_This web app was developed using AI and has not been carefully vetted for security or correctness by a human._
+
+Jump to: [Bug reports and contributions](#contributing-&-security)
+
 # PCB Colour-Plan
 
 Import a KiCAD PCB, explore an interactive Bill of Materials, and generate
