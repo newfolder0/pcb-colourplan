@@ -5,6 +5,8 @@ Import a KiCAD PCB, explore an interactive Bill of Materials, and generate
 wireframe of the board with up to four BOM groups highlighted in distinct
 colours, plus a legend. Built for the person assembling and checking the board.
 
+**Try it now - free hosted version: [colourplan.peterbell.ch](https://colourplan.peterbell.ch)**
+
 Everything runs **in your browser**. The `.kicad_pcb` file is parsed, rendered,
 and turned into a PDF entirely client-side - it never leaves your machine.
 
