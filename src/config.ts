@@ -1,13 +1,18 @@
 // User-editable configuration.
 
 /**
- * Contact email shown in the disclaimer and as the data-controller contact in
- * the privacy notice.
+ * Operator identity shown in the disclaimer and the privacy/GDPR notice.
+ * Deployment-specific, so it is NOT hard-coded in the open-source build: supply
+ * it at build time via env (see .env.example -> docker-compose.yml build args).
+ * Left empty, the contact links and controller line are simply not rendered.
  */
-export const CONTACT_EMAIL = 'admin@peterbell.ch';
+const contactEmailEnv = import.meta.env.VITE_CONTACT_EMAIL;
+/** Contact email for bug reports and as the data-controller contact. */
+export const CONTACT_EMAIL = (typeof contactEmailEnv === 'string' ? contactEmailEnv : '').trim();
 
+const dataControllerEnv = import.meta.env.VITE_DATA_CONTROLLER;
 /** Person/entity responsible for the hosted app and its analytics (GDPR controller). */
-export const DATA_CONTROLLER = 'Peter Bell Electronics Ltd';
+export const DATA_CONTROLLER = (typeof dataControllerEnv === 'string' ? dataControllerEnv : '').trim();
 
 /**
  * Public repository where anyone can get the open-source container and self-host

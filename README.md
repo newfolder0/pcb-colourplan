@@ -5,8 +5,6 @@ Import a KiCAD PCB, explore an interactive Bill of Materials, and generate
 wireframe of the board with up to four BOM groups highlighted in distinct
 colours, plus a legend. Built for the person assembling and checking the board.
 
-**Hosted version (free): [colourplan.peterbell.ch](https://colourplan.peterbell.ch)**
-
 Everything runs **in your browser**. The `.kicad_pcb` file is parsed, rendered,
 and turned into a PDF entirely client-side - it never leaves your machine.
 
@@ -127,6 +125,11 @@ A standard assembly colour-plan layout:
 - Optional logo image in the title block; per-page group reordering/recolouring;
   pressfit / mechanical categories (need the `Assembly Process` field or a
   footprint-name rule); PNG/SVG export.
+
+## Contributing & security
+
+Bug reports and PRs are welcome - see [`CONTRIBUTING.md`](CONTRIBUTING.md). To
+report a security issue privately, see [`SECURITY.md`](SECURITY.md).
 
 ## Licence
 

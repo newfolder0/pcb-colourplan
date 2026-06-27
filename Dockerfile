@@ -12,6 +12,13 @@ COPY . .
 # wall-free, fully-local self-hosted instance.
 ARG VITE_TELEMETRY_ENDPOINT=/collect
 ENV VITE_TELEMETRY_ENDPOINT=$VITE_TELEMETRY_ENDPOINT
+# Operator identity shown in the disclaimer / privacy notice (optional). Empty by
+# default so the open-source image ships with no operator contact details; the
+# hosted build supplies them via .env -> docker-compose build args.
+ARG VITE_CONTACT_EMAIL=
+ENV VITE_CONTACT_EMAIL=$VITE_CONTACT_EMAIL
+ARG VITE_DATA_CONTROLLER=
+ENV VITE_DATA_CONTROLLER=$VITE_DATA_CONTROLLER
 RUN npm run build
 
 FROM caddy:2-alpine

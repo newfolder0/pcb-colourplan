@@ -35,9 +35,12 @@ export function TelemetryNotice() {
       </ul>
 
       <p className="muted small">
-        The data is anonymous and aggregated. Data controller: {DATA_CONTROLLER} (contact:{' '}
-        <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>). Raw events are deleted after{' '}
-        {TELEMETRY_RETENTION}; only aggregate counts are kept.
+        The data is anonymous and aggregated.
+        {DATA_CONTROLLER && <> Data controller: {DATA_CONTROLLER}.</>}
+        {CONTACT_EMAIL && (
+          <> Contact: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.</>
+        )}{' '}
+        Raw events are deleted after {TELEMETRY_RETENTION}; only aggregate counts are kept.
       </p>
     </div>
   );

@@ -7,6 +7,11 @@ services:
         # For a fully-local, telemetry-free, wall-free self-hosted instance, set
         # this to "" and delete the `collector` service + `depends_on`.
         VITE_TELEMETRY_ENDPOINT: /collect
+        # Operator identity for the disclaimer + GDPR/privacy notice. Set
+        # CONTACT_EMAIL and DATA_CONTROLLER in a .env file next to this compose;
+        # leave blank if you'd rather not show contact details.
+        VITE_CONTACT_EMAIL: ${CONTACT_EMAIL:-}
+        VITE_DATA_CONTROLLER: ${DATA_CONTROLLER:-}
     image: pcb-colourplan
     environment:
       # A domain (e.g. pcb.example.com) makes Caddy auto-provision HTTPS via

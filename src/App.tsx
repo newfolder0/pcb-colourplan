@@ -99,9 +99,13 @@ function App() {
         <footer className="disclaimer" role="note">
           <strong>⚠ AI-built tool.</strong> This web app was developed using AI and has not been carefully
           vetted for security or correctness by a human. Be aware of this when you upload your intellectual
-          property, and carefully check all outputs. Found a bug?{' '}
-          <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-          {' · '}
+          property, and carefully check all outputs.{' '}
+          {CONTACT_EMAIL && (
+            <>
+              Found a bug? <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+              {' · '}
+            </>
+          )}
           <button type="button" className="link" onClick={() => setPrivacyOpen(true)}>
             Privacy &amp; data
           </button>

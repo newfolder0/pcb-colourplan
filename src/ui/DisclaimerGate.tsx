@@ -42,9 +42,11 @@ export function DisclaimerGate({ children }: { children: ReactNode }) {
           <pre className="selfhost-cmd">git clone {SELF_HOST_URL}
 cd {repoDir}
 docker compose up -d --build   # then open http://localhost</pre>
-          <p className="muted small">
-            Questions? <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
-          </p>
+          {CONTACT_EMAIL && (
+            <p className="muted small">
+              Questions? <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
+            </p>
+          )}
           <button className="primary" onClick={() => choose('granted')}>
             Changed your mind? Agree and use the hosted tool
           </button>
@@ -66,7 +68,9 @@ docker compose up -d --build   # then open http://localhost</pre>
           Your design is processed locally in your browser and does not leave your computer, but
           I cannot guarantee correctness, security, or privacy; this tool is provided on a best-effort basis.
           You must carefully check all outputs, which <strong>may result in non-conformities in PCB assembly.</strong>
-          To report bugs or concerns: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.
+          {CONTACT_EMAIL && (
+            <> To report bugs or concerns: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.</>
+          )}
         </p>
 
         <div className="telemetry-box">

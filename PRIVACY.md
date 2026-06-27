@@ -19,8 +19,9 @@ _Last updated: 2026-06-05_
 
 ## Who is responsible
 
-Data controller: **Peter Bell**. Contact: `you@example.com` _(replace with your
-real address before publishing)_.
+Data controller: **the operator of this instance** (set via the `DATA_CONTROLLER`
+build env). Contact: the address shown in the app's disclaimer / privacy panel
+(set via `CONTACT_EMAIL`). _Operators: set both in your `.env` before publishing._
 
 ## What is processed locally and never transmitted
 
