@@ -2,7 +2,7 @@
 > [!WARNING] 
 ⚠ AI-slop ⚠
 > 
-> _This web app was developed using AI and has not been carefully vetted for security or correctness by a human._
+> _This web app was developed using AI and has not been carefully vetted for security or correctness by a human. It is provided without any warranty or liability._
 > 
 > Jump to: [Bug reports and contributions](#contributing-&-security)
 
