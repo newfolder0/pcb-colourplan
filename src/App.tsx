@@ -52,10 +52,10 @@ function App() {
         {ready && (
           <div className="seg view-tabs">
             <button className={view === 'inspect' ? 'on' : ''} onClick={() => setView('inspect')}>
-              Inspect
+              Interactive inspector
             </button>
             <button className={view === 'plan' ? 'on' : ''} onClick={() => setView('plan')}>
-              Colour plan
+              Generate PDF
             </button>
           </div>
         )}
