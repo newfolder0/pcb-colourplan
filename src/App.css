@@ -228,6 +228,10 @@ button.link {
   color: #bbb;
   cursor: not-allowed;
 }
+.board-toolbar .board-pdf {
+  margin-left: auto;
+  white-space: nowrap;
+}
 .board-canvas {
   flex: 1 1 auto;
   min-height: 0;
@@ -408,6 +412,56 @@ button.primary {
 button.primary:disabled {
   background: #9bb8ee;
   cursor: not-allowed;
+}
+.plan-controls .lbl {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.plan-controls .sec-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.help-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  background: var(--panel);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: help;
+  user-select: none;
+  flex: 0 0 auto;
+}
+.help-dot:hover,
+.help-dot:focus {
+  color: var(--accent);
+  border-color: var(--accent);
+  outline: none;
+}
+.plan-downloads {
+  margin-top: 2px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.plan-downloads ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.plan-downloads li {
+  font-size: 13px;
 }
 .plan-summary {
   margin-top: -4px;

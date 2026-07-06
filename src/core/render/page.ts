@@ -8,7 +8,7 @@
 import type { CatPage, PlanGroup } from '../colourplan/paginate';
 import { pageHighlight } from '../colourplan/paginate';
 import { boardBBox } from '../geometry/transform';
-import type { Board } from '../model/types';
+import type { Board, Side } from '../model/types';
 import { renderBoardSvg, type RenderStyle } from './svg';
 import { compressRefs } from '../util/refs';
 
@@ -102,6 +102,63 @@ export function composePageSvg(board: Board, page: CatPage, opts: ComposeOptions
       side: page.side,
       mirror: page.side === 'B',
       highlight: pageHighlight(page),
+      showLabels: true,
+      style: opts.style,
+      bbox: bb,
+    }).inner;
+    out.push(`<g transform="translate(${f(ox)} ${f(oy)}) scale(${f(s)}) translate(${f(-bb.minX)} ${f(-bb.minY)})">${inner}</g>`);
+  }
+
+  out.push('</svg>');
+  return out.join('');
+}
+
+export interface BoardPageOptions {
+  size: PageSize;
+  side: Side;
+  /** ref -> highlight colour (hex). */
+  highlight?: Map<string, string>;
+  /** Heading shown top-left (e.g. project / file name). */
+  title?: string;
+  style?: Partial<RenderStyle>;
+}
+
+/**
+ * A minimal full-page SVG for the interactive inspector's PDF: a single
+ * heading line plus the greyscale board with the current selection highlighted
+ * and labelled. Bottom side is mirrored, matching the on-screen view.
+ */
+export function composeBoardPageSvg(board: Board, opts: BoardPageOptions): string {
+  const { width: W, height: H } = opts.size;
+  const sideLabel = opts.side === 'B' ? 'BOTTOM' : 'TOP';
+  const out: string[] = [];
+  out.push(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" font-family="helvetica, sans-serif">`,
+  );
+  out.push(`<rect x="0" y="0" width="${W}" height="${H}" fill="#ffffff"/>`);
+  out.push(`<rect x="${M - 2}" y="${M - 2}" width="${f(W - 2 * (M - 2))}" height="${f(H - 2 * (M - 2))}" fill="none" stroke="#c2c7cf" stroke-width="0.3"/>`);
+
+  // Heading line.
+  const headY = M + 4;
+  const heading = [opts.title, sideLabel].filter(Boolean).join(' — ');
+  out.push(text(M, headY, heading, 4.5, '#101418', 'start', true));
+
+  // Board region below the heading.
+  const rx = M;
+  const ry = headY + 3;
+  const rw = W - 2 * M;
+  const rh = H - M - ry;
+  if (rh > 10) {
+    const bb = boardBBox(board);
+    const bw = bb.maxX - bb.minX;
+    const bh = bb.maxY - bb.minY;
+    const s = Math.min(rw / bw, rh / bh);
+    const ox = rx + (rw - bw * s) / 2;
+    const oy = ry + (rh - bh * s) / 2;
+    const inner = renderBoardSvg(board, {
+      side: opts.side,
+      mirror: opts.side === 'B',
+      highlight: opts.highlight,
       showLabels: true,
       style: opts.style,
       bbox: bb,

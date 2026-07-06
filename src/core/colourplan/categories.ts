@@ -16,8 +16,8 @@ export interface Category {
 }
 
 const DEFAULT_LABELS: Record<string, string> = {
-  SMD: 'SMD',
-  THD: 'Through-Holes',
+  SMD: 'SMT',
+  THD: 'THT',
   NotMounted: 'Not Mounted',
 };
 
@@ -34,10 +34,14 @@ const CANONICAL: Record<string, string> = {
   throughholes: 'THD',
   pth: 'THD',
   notmounted: 'NotMounted',
+  notfitted: 'NotMounted',
+  notplaced: 'NotMounted',
   dnp: 'NotMounted',
+  dnf: 'NotMounted',
   nm: 'NotMounted',
   donotpopulate: 'NotMounted',
   donotmount: 'NotMounted',
+  donotfit: 'NotMounted',
 };
 
 /** Normalise a key for separator/case-insensitive matching ("Assembly_Process" == "Assembly Process"). */
@@ -97,6 +101,18 @@ const PN_CANDIDATES = [
   'MPN1',
   'PN',
 ];
+
+/** A filesystem-friendly slug for a category label (e.g. "Not Mounted" -> "Not-Mounted"). */
+export function categorySlug(label: string): string {
+  return (
+    label
+      .trim()
+      .replace(/[\s/]+/g, '-')
+      .replace(/[^A-Za-z0-9._-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '') || 'category'
+  );
+}
 
 export function detectPartNumberField(propertyKeys: string[]): string | null {
   for (const cand of PN_CANDIDATES) {

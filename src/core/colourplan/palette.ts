@@ -1,12 +1,17 @@
-// Highlight palettes. Each colour-plan page shows up to 4 groups, so any 4
+// Highlight palettes. A colour-plan page shows up to 8 groups, so all 8
 // consecutive entries must be clearly distinguishable.
 
-/** Default colour-plan order: vivid "highlighter" green, yellow, red, blue. */
+/** Default colour-plan order: vivid "highlighter" green, yellow, red, blue, then
+ * four more distinct hues for pages with up to 8 groups. */
 export const STANDARD_PALETTE = [
   '#2fd92f', // green
   '#ffe600', // yellow
   '#ff2424', // red
   '#1f9dff', // blue
+  '#ff8c00', // orange
+  '#b14bff', // purple
+  '#00c2b2', // teal
+  '#ff5bbf', // pink
 ];
 
 /** Bright, saturated colours. */

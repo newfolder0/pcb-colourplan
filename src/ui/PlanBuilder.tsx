@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { deriveCategories, detectPartNumberField } from '../core/colourplan/categories';
+import { categorySlug, deriveCategories, detectPartNumberField } from '../core/colourplan/categories';
 import { getPalette, type PaletteName } from '../core/colourplan/palette';
-import { buildDocuments } from '../core/colourplan/paginate';
+import { buildDocuments, type CatPage } from '../core/colourplan/paginate';
 import { generateColourPlanPdf } from '../core/pdf/export';
 import { A4_LANDSCAPE, A4_PORTRAIT, composePageSvg, type TitleBlock } from '../core/render/page';
 import { boardBBox } from '../core/geometry/transform';
@@ -12,6 +12,15 @@ import { trackPdfGenerated } from '../telemetry';
 const today = () => new Date().toISOString().slice(0, 10);
 
 type Orientation = 'auto' | 'landscape' | 'portrait';
+
+/** Small "?" bubble with a hover tooltip, to explain a single control. */
+function HelpDot({ text }: { text: string }) {
+  return (
+    <span className="help-dot" role="img" aria-label="help" tabIndex={0} title={text}>
+      ?
+    </span>
+  );
+}
 
 export function PlanBuilder() {
   const board = useStore((s) => s.board);
@@ -83,6 +92,19 @@ export function PlanBuilder() {
     previewRef.current.innerHTML = board && page ? composePageSvg(board, page, { size, titleBlock: tb, partNumberField, date }) : '';
   }, [board, page, size, tb, partNumberField, date]);
 
+  // Individual downloads: one PDF per (category, side) document, e.g. "SMT-top",
+  // "THT-bot", "Not-Mounted-top". Derived from the same page list as the full PDF.
+  const downloads = useMemo(() => {
+    const groups = new Map<string, { slug: string; pages: CatPage[] }>();
+    for (const p of pages) {
+      const key = `${p.categoryId}|${p.side}`;
+      let g = groups.get(key);
+      if (!g) groups.set(key, (g = { slug: `${categorySlug(p.category)}-${p.side === 'B' ? 'bot' : 'top'}`, pages: [] }));
+      g.pages.push(p);
+    }
+    return [...groups.values()];
+  }, [pages]);
+
   if (!board || !bom) return null;
 
   const toggleSide = (s: Side) => setSides((cur) => (cur.includes(s) ? cur.filter((x) => x !== s) : [...cur, s]));
@@ -94,18 +116,12 @@ export function PlanBuilder() {
       return next;
     });
 
-  async function onGenerate() {
-    if (!board || !pages.length) return;
+  async function download(subset: CatPage[], filename: string) {
+    if (!board || !subset.length) return;
     setBusy(true);
     try {
-      await generateColourPlanPdf(board, pages, {
-        size,
-        titleBlock: tb,
-        partNumberField,
-        date,
-        filename: `${tb.projectTitle || baseName || 'colour-plan'} - colour plan.pdf`,
-      });
-      trackPdfGenerated(pages.length); // opt-in: page count only
+      await generateColourPlanPdf(board, subset, { size, titleBlock: tb, partNumberField, date, filename });
+      trackPdfGenerated(subset.length); // opt-in: page count only
     } catch (err) {
       console.error('PDF generation failed', err);
       alert('PDF generation failed: ' + (err instanceof Error ? err.message : String(err)));
@@ -114,13 +130,19 @@ export function PlanBuilder() {
     }
   }
 
+  const filePrefix = tb.projectTitle || baseName || 'colour-plan';
+  const onGenerate = () => download(pages, `${filePrefix} - colour plan.pdf`);
+
   return (
     <div className="plan-builder">
       <aside className="plan-controls">
         <h3>Colour plan</h3>
 
-        <section title="Assembly-process groups. Each becomes its own set of pages (Top/Bottom). Derived from KiCAD SMD/through-hole/DNP attributes today, or from an 'Assembly Process' field on the parts if present.">
-          <div className="sec-title">Categories</div>
+        <section>
+          <div className="sec-title">
+            Categories
+            <HelpDot text="Assembly-process groups. Each becomes its own set of pages (Top/Bottom). Derived from KiCAD SMD/through-hole/DNP attributes today, or from an 'Assembly Process' field on the parts (SMT, THT, Not Fitted, DNP, or any custom value) if present." />
+          </div>
           {categories.map((c) => (
             <label key={c.id} className="check" title={`Include the "${c.label}" category (${c.rows.length} line${c.rows.length === 1 ? '' : 's'}) in the PDF.`}>
               <input type="checkbox" checked={catIds.has(c.id)} onChange={() => toggleCat(c.id)} />
@@ -129,8 +151,11 @@ export function PlanBuilder() {
           ))}
         </section>
 
-        <label className="row" title="Which board side(s) to produce pages for. Bottom pages are mirrored (drawn as viewed from underneath the board).">
-          Board sides
+        <label className="row">
+          <span className="lbl">
+            Board sides
+            <HelpDot text="Which board side(s) to produce pages for. Bottom pages are mirrored (drawn as viewed from underneath the board)." />
+          </span>
           <span className="seg">
             <button className={sides.includes('F') ? 'on' : ''} disabled={!hasFront} onClick={() => toggleSide('F')}>
               Top
@@ -141,10 +166,13 @@ export function PlanBuilder() {
           </span>
         </label>
 
-        <label className="row" title="Maximum number of component groups highlighted (each in a different colour) on a single page. A category with more groups spills onto extra pages.">
-          Groups / page
+        <label className="row">
+          <span className="lbl">
+            Groups / page
+            <HelpDot text="Maximum number of component lines highlighted (each in a different colour) on a single page. A category with more lines spills onto extra pages." />
+          </span>
           <select value={groupsPerPage} onChange={(e) => setGroupsPerPage(Number(e.target.value))}>
-            {[1, 2, 3, 4].map((n) => (
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
               <option key={n} value={n}>
                 {n}
               </option>
@@ -152,8 +180,11 @@ export function PlanBuilder() {
           </select>
         </label>
 
-        <label className="row" title="Highlight colour set used for the groups on each page (up to 4 distinct colours). Colour-blind safe uses the Okabe-Ito palette.">
-          Palette
+        <label className="row">
+          <span className="lbl">
+            Palette
+            <HelpDot text="Highlight colour set used for the groups on each page (up to 8 distinct colours). Colour-blind safe uses the Okabe-Ito palette." />
+          </span>
           <select value={paletteName} onChange={(e) => setPaletteName(e.target.value as PaletteName)}>
             <option value="standard">Standard (green/yellow/red/blue)</option>
             <option value="bright">Bright</option>
@@ -161,8 +192,11 @@ export function PlanBuilder() {
           </select>
         </label>
 
-        <label className="row" title="Page orientation. 'Auto' chooses landscape or portrait to best fit the board's shape.">
-          Orientation
+        <label className="row">
+          <span className="lbl">
+            Orientation
+            <HelpDot text="Page orientation. 'Auto' chooses landscape or portrait to best fit the board's shape." />
+          </span>
           <select value={orientation} onChange={(e) => setOrientation(e.target.value as Orientation)}>
             <option value="auto">Auto</option>
             <option value="landscape">A4 landscape</option>
@@ -170,8 +204,11 @@ export function PlanBuilder() {
           </select>
         </label>
 
-        <label className="row" title="Which component field fills the legend's 'Part Number' column. 'Auto' picks the first MPN-like field; 'None' hides the column.">
-          Part Number
+        <label className="row">
+          <span className="lbl">
+            Part Number
+            <HelpDot text="Which component field fills the legend's 'Part Number' column. 'Auto' picks the first MPN-like field; 'None' hides the column." />
+          </span>
           <select value={pnChoice} onChange={(e) => setPnChoice(e.target.value)}>
             <option value="auto">Auto{detectedPn ? ` (${detectedPn})` : ' (none found)'}</option>
             <option value="__none__">None</option>
@@ -183,8 +220,11 @@ export function PlanBuilder() {
           </select>
         </label>
 
-        <section title="Fields printed in the title block at the bottom of every page.">
-          <div className="sec-title">Title block</div>
+        <section>
+          <div className="sec-title">
+            Title block
+            <HelpDot text="Fields printed in the title block at the bottom of every page." />
+          </div>
           <input
             className="tb"
             placeholder="Document number"
@@ -235,6 +275,27 @@ export function PlanBuilder() {
         >
           {busy ? 'Generating…' : 'Download PDF'}
         </button>
+
+        {downloads.length > 1 && (
+          <div className="plan-downloads">
+            <div className="muted small">Or download individually:</div>
+            <ul>
+              {downloads.map((d) => (
+                <li key={d.slug}>
+                  <button
+                    className="link"
+                    disabled={busy}
+                    title={`Download only the ${d.slug} page${d.pages.length === 1 ? '' : 's'} (${d.pages.length}).`}
+                    onClick={() => download(d.pages, `${filePrefix} - ${d.slug}.pdf`)}
+                  >
+                    {d.slug}
+                  </button>
+                  <span className="muted small"> ({d.pages.length})</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </aside>
 
       <div className="plan-preview-wrap">

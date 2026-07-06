@@ -1,11 +1,15 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { boardBBox } from '../core/geometry/transform';
+import { generateInspectorPdf } from '../core/pdf/export';
+import { A4_LANDSCAPE, A4_PORTRAIT } from '../core/render/page';
 import { renderBoardSvg } from '../core/render/svg';
+import type { Side } from '../core/model/types';
 import { selectionHighlight, useStore } from '../state/store';
 
 export function BoardCanvas() {
   const board = useStore((s) => s.board);
   const bom = useStore((s) => s.bom);
+  const filename = useStore((s) => s.filename);
   const side = useStore((s) => s.side);
   const setSide = useStore((s) => s.setSide);
   const selection = useStore((s) => s.selection);
@@ -13,6 +17,7 @@ export function BoardCanvas() {
   const toggleGroup = useStore((s) => s.toggleGroup);
   const setHoverGroup = useStore((s) => s.setHoverGroup);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [busy, setBusy] = useState(false);
 
   const refToGroup = useMemo(() => {
     const m = new Map<string, string>();
@@ -63,6 +68,31 @@ export function BoardCanvas() {
     return el?.getAttribute('data-ref') ?? null;
   }
 
+  async function onDownloadPdf() {
+    if (!board) return;
+    setBusy(true);
+    try {
+      const bb = boardBBox(board);
+      const size = bb.maxX - bb.minX >= bb.maxY - bb.minY ? A4_LANDSCAPE : A4_PORTRAIT;
+      const sides: Side[] = [];
+      if (hasFront) sides.push('F');
+      if (hasBack) sides.push('B');
+      const base = (filename ?? 'board').replace(/\.[^.]+$/, '');
+      await generateInspectorPdf(board, {
+        size,
+        sides: sides.length ? sides : [side],
+        highlight: selectionHighlight(bom, selection),
+        title: base,
+        filename: `${base} - inspector.pdf`,
+      });
+    } catch (err) {
+      console.error('Inspector PDF failed', err);
+      alert('PDF generation failed: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (!board) return null;
 
   return (
@@ -79,6 +109,14 @@ export function BoardCanvas() {
         <span className="muted small">
           {side === 'B' ? 'Bottom (mirrored) · ' : ''}click a part or BOM row to highlight
         </span>
+        <button
+          className="link board-pdf"
+          title="Download a PDF of this view: the whole board with the current highlighted selection, top and bottom on consecutive pages."
+          disabled={busy}
+          onClick={onDownloadPdf}
+        >
+          {busy ? 'Generating…' : 'Download PDF'}
+        </button>
       </div>
       <div
         ref={containerRef}

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { loadFixture } from '../__fixtures__/load';
 import { deriveBom, type BomRow } from '../bom/derive';
 import { buildBoard } from '../model/board';
-import { categoryOfRow, deriveCategories, detectPartNumberField } from './categories';
+import { categoryOfRow, categorySlug, deriveCategories, detectPartNumberField } from './categories';
 
 const board = buildBoard(loadFixture('sample.kicad_pcb'));
 const { rows, propertyKeys } = deriveBom(board);
@@ -35,6 +35,12 @@ describe('categoryOfRow', () => {
     expect(categoryOfRow(mk({ mount: 'SMD', properties: { 'Assembly Process': 'SMT' } })).id).toBe('SMD');
   });
 
+  it('routes "not fitted"/"DNP"-style processes to Not Mounted', () => {
+    for (const v of ['Not Mounted', 'Not Fitted', 'DNP', 'DNF', 'Do Not Fit']) {
+      expect(categoryOfRow(mk({ mount: 'SMD', properties: { 'Assembly Process': v } })).id).toBe('NotMounted');
+    }
+  });
+
   it('keeps unknown processes as their own category', () => {
     const c = categoryOfRow(mk({ mount: 'SMD', properties: { 'Assembly Process': 'Post-Assembly' } }));
     expect(c.id).toBe('Post-Assembly');
@@ -53,6 +59,13 @@ describe('deriveCategories', () => {
     expect(ids[ids.length - 1]).toBe('NotMounted');
   });
 
+  it('labels the default categories SMT / THT / Not Mounted', () => {
+    const byId = new Map(deriveCategories(rows).map((c) => [c.id, c.label]));
+    expect(byId.get('SMD')).toBe('SMT');
+    expect(byId.get('THD')).toBe('THT');
+    expect(byId.get('NotMounted')).toBe('Not Mounted');
+  });
+
   it('merges "THT"-tagged and untagged through-hole parts into one category', () => {
     const mixed: BomRow[] = [
       mk({ groupKey: 'a', refs: ['J1'], mount: 'THT', properties: { 'Assembly Process': 'THT' } }),
@@ -63,6 +76,16 @@ describe('deriveCategories', () => {
     expect(thd).toHaveLength(1); // one category, not two
     expect(thd[0].rows).toHaveLength(2);
     expect(thd[0].label).toBe('THT'); // project's own wording wins
+  });
+});
+
+describe('categorySlug', () => {
+  it('makes filesystem-friendly slugs', () => {
+    expect(categorySlug('SMT')).toBe('SMT');
+    expect(categorySlug('THT')).toBe('THT');
+    expect(categorySlug('Not Mounted')).toBe('Not-Mounted');
+    expect(categorySlug('Post-Assembly')).toBe('Post-Assembly');
+    expect(categorySlug('Through-Holes / PTH')).toBe('Through-Holes-PTH');
   });
 });
 
