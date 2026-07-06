@@ -446,6 +446,23 @@ button.primary:disabled {
   border-color: var(--accent);
   outline: none;
 }
+.help-tip {
+  position: fixed;
+  z-index: 2000;
+  max-width: 240px;
+  width: max-content;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: #101418;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.35;
+  text-align: left;
+  white-space: normal;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  pointer-events: none;
+}
 .plan-downloads {
   margin-top: 2px;
   display: flex;

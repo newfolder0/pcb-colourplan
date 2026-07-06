@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type FocusEvent as ReactFocusEvent, type MouseEvent as ReactMouseEvent } from 'react';
 import { categorySlug, deriveCategories, detectPartNumberField } from '../core/colourplan/categories';
 import { getPalette, type PaletteName } from '../core/colourplan/palette';
 import { buildDocuments, type CatPage } from '../core/colourplan/paginate';
@@ -13,11 +13,36 @@ const today = () => new Date().toISOString().slice(0, 10);
 
 type Orientation = 'auto' | 'landscape' | 'portrait';
 
-/** Small "?" bubble with a hover tooltip, to explain a single control. */
+/** Small "?" bubble with a hover/focus tooltip, to explain a single control.
+ * Uses a fixed-positioned bubble (not the native `title`) so the text actually
+ * shows immediately and isn't clipped by the scrollable controls panel. */
 function HelpDot({ text }: { text: string }) {
+  const [pos, setPos] = useState<{ x: number; y: number } | null>(null);
+  const show = (e: ReactMouseEvent | ReactFocusEvent) => {
+    const r = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    // Anchor to the dot's left edge and extend rightward, clamped to the viewport
+    // so the bubble is never cut off at the panel/screen edge.
+    const x = Math.max(8, Math.min(r.left, window.innerWidth - 248));
+    setPos({ x, y: r.bottom + 6 });
+  };
+  const hide = () => setPos(null);
   return (
-    <span className="help-dot" role="img" aria-label="help" tabIndex={0} title={text}>
+    <span
+      className="help-dot"
+      role="img"
+      aria-label="help"
+      tabIndex={0}
+      onMouseEnter={show}
+      onMouseLeave={hide}
+      onFocus={show}
+      onBlur={hide}
+    >
       ?
+      {pos && (
+        <span className="help-tip" role="tooltip" style={{ left: pos.x, top: pos.y }}>
+          {text}
+        </span>
+      )}
     </span>
   );
 }
