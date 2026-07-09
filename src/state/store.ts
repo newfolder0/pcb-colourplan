@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { BomResult, BomRow } from '../core/bom/derive';
 import type { Board, Side } from '../core/model/types';
 import { BRIGHT_PALETTE, colourAt } from '../core/colourplan/palette';
-import { detectFormat, isBinaryDesign } from '../core/import';
+import { detectFormat } from '../core/import';
 import { trackBoardProcessed } from '../telemetry';
 import { parseDesignFile } from '../worker/parseClient';
 
@@ -57,7 +57,10 @@ export const useStore = create<AppState>((set, get) => ({
           `File is ${(file.size / 1024 / 1024).toFixed(0)} MB; the limit is ${MAX_INPUT_BYTES / 1024 / 1024} MB.`,
         );
       }
-      const data = isBinaryDesign(file.name) ? await file.arrayBuffer() : await file.text();
+      // Always read raw bytes: text designs may be UTF-8 or Latin-1/Windows-1252
+      // (KiCAD often saves "µ" as a single 0xB5 byte), so the decoder - not the
+      // browser's UTF-8-only file.text() - decides the encoding. See asText/decodeText.
+      const data = await file.arrayBuffer();
       const { board, bom } = await parseDesignFile(file.name, data);
       const hasBack = board.footprints.some((f) => f.side === 'B');
       set({

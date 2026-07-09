@@ -47,7 +47,21 @@ export function parseDesign(filename: string, data: DesignData): Board {
 
 function asText(d: DesignData): string {
   if (typeof d === 'string') return d;
-  return new TextDecoder().decode(d instanceof Uint8Array ? d : new Uint8Array(d));
+  return decodeText(d instanceof Uint8Array ? d : new Uint8Array(d));
+}
+
+/**
+ * Decode design text as UTF-8, falling back to Windows-1252 (a Latin-1 superset)
+ * when the bytes aren't valid UTF-8. KiCAD/EDA files are often saved in Latin-1,
+ * where the micro sign "µ" is a single byte 0xB5 - invalid UTF-8, which would
+ * otherwise decode to the replacement character "�" (e.g. "4.7µF" -> "4.7�F").
+ */
+export function decodeText(bytes: Uint8Array): string {
+  try {
+    return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+  } catch {
+    return new TextDecoder('windows-1252').decode(bytes);
+  }
 }
 
 function asBytes(d: DesignData): Uint8Array {
