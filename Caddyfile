@@ -23,14 +23,32 @@
 		-Server
 	}
 
-	# Long-cache the content-hashed build assets.
+	# Long-cache the content-hashed build assets (JS, CSS and the favicon).
 	@assets path /assets/*
 	header @assets Cache-Control "public, max-age=2592000, immutable"
+
+	# Everything else (index.html, licence notices) is revalidated on every load.
+	# The ETag makes that a cheap 304, and a deploy - including a new hashed
+	# favicon URL - is picked up immediately instead of after heuristic caching.
+	@notAssets not path /assets/*
+	header @notAssets Cache-Control "no-cache"
 
 	# Opt-in anonymous telemetry -> same-origin collector service. Caddy sets
 	# X-Forwarded-For and forwards the User-Agent, so the collector is unchanged.
 	handle /collect {
 		reverse_proxy collector:8081
+	}
+
+	# A missing path that looks like a file (ends in .ext) is a real 404, not the
+	# SPA shell. Otherwise /favicon.ico, /robots.txt or a stale /assets/*.js chunk
+	# is answered with index.html as text/html and status 200. The app has no
+	# client-side routes, so no legitimate navigation is affected.
+	@missingFile {
+		not file
+		path_regexp \.[A-Za-z0-9]+$
+	}
+	handle @missingFile {
+		respond 404
 	}
 
 	# Single-page app: serve a matching file, else fall back to index.html.
