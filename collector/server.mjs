@@ -10,12 +10,17 @@
 //   - Estimates unique visitors with a daily-rotating salted hash of IP+UA held
 //     ONLY in memory; the hash is never written to disk. Only aggregate counts
 //     and the event rows (no IP/UA/hash) are persisted.
+//   - Enforces the retention promise itself: raw event rows older than
+//     TELEMETRY_RETENTION_DAYS (default 365, the "12 months" in the notice) are
+//     pruned at start-up and daily. No external cron to forget. The per-day
+//     unique-visitor totals are kept.
 //
 // Deploy behind Caddy as a same-origin /collect (see ../Caddyfile), so the app
 // CSP can stay `connect-src 'self'`. Run: `node collector/server.mjs`.
+// Test: `node collector/selftest.mjs`.
 
 import { createServer } from 'node:http';
-import { appendFile, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { appendFile, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { createHash, randomBytes } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,6 +30,10 @@ const DATA_DIR = process.env.DATA_DIR ?? join(dirname(fileURLToPath(import.meta.
 const EVENTS_FILE = join(DATA_DIR, 'events.ndjson');
 const UNIQUES_FILE = join(DATA_DIR, 'uniques.json');
 const MAX_BODY = 1024; // bytes - the payload is tiny; reject anything larger
+const RETENTION_DAYS = Number(process.env.TELEMETRY_RETENTION_DAYS) > 0
+  ? Math.round(Number(process.env.TELEMETRY_RETENTION_DAYS))
+  : 365;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Per-run secret so the daily visitor hash cannot be reproduced from stored data
 // (and rotates on restart). Combined with the date, never persisted.
@@ -38,6 +47,17 @@ const FORMATS = new Set(['kicad', 'ipc2581', 'odbpp', 'unknown']);
 const OUTCOMES = new Set(['ok', 'parse_error', 'unsupported']);
 
 const isInt = (n) => typeof n === 'number' && Number.isFinite(n) && n >= 0 && n < 1e7;
+
+// Every file write goes through this one queue. The append, the uniques
+// read-modify-write and the prune's read-rewrite-rename must not interleave:
+// a row appended mid-prune would vanish with the replaced file, and two
+// concurrent visitors could each overwrite the other's uniques increment.
+let writeQueue = Promise.resolve();
+function serial(task) {
+  const run = writeQueue.then(task);
+  writeQueue = run.catch(() => {});
+  return run;
+}
 
 /** Allowlist + coerce the client payload. Returns null if invalid. */
 function sanitize(raw) {
@@ -83,6 +103,43 @@ async function countUnique(ip, ua) {
   }
   counts[date] = (counts[date] ?? 0) + 1;
   await writeFile(UNIQUES_FILE, JSON.stringify(counts, null, 0));
+}
+
+/** Drop raw event rows older than the retention window. Atomic rewrite; returns rows removed. */
+async function pruneEvents(now = Date.now()) {
+  let text;
+  try {
+    text = await readFile(EVENTS_FILE, 'utf8');
+  } catch (err) {
+    if (err && err.code === 'ENOENT') return 0;
+    throw err;
+  }
+  const cutoff = new Date(now - RETENTION_DAYS * DAY_MS).toISOString();
+  const lines = text.split('\n').filter(Boolean);
+  const kept = lines.filter((line) => {
+    try {
+      const row = JSON.parse(line);
+      return typeof row.ts === 'string' && row.ts >= cutoff;
+    } catch {
+      return false; // an unreadable row has no date to keep it by
+    }
+  });
+  if (kept.length === lines.length) return 0;
+  const tmp = `${EVENTS_FILE}.tmp`;
+  await writeFile(tmp, kept.length ? kept.join('\n') + '\n' : '');
+  await rename(tmp, EVENTS_FILE); // readers see the old file or the new one, never half
+  return lines.length - kept.length;
+}
+
+async function prune() {
+  try {
+    const removed = await serial(() => pruneEvents());
+    if (removed > 0) {
+      console.log(`[collector] pruned ${removed} event row(s) older than ${RETENTION_DAYS} days`);
+    }
+  } catch (err) {
+    console.error('[collector] prune failed:', err instanceof Error ? err.message : err);
+  }
 }
 
 async function readBody(req) {
@@ -132,9 +189,11 @@ const server = createServer(async (req, res) => {
   const row = { ts: new Date().toISOString(), ...payload };
 
   try {
-    await mkdir(DATA_DIR, { recursive: true });
-    await appendFile(EVENTS_FILE, JSON.stringify(row) + '\n');
-    await countUnique(ip, ua); // ip/ua used here only, never stored
+    await serial(async () => {
+      await mkdir(DATA_DIR, { recursive: true });
+      await appendFile(EVENTS_FILE, JSON.stringify(row) + '\n');
+      await countUnique(ip, ua); // ip/ua used here only, never stored
+    });
   } catch (err) {
     // Log server-side (visible in container logs) so a misconfiguration is never
     // silent, but never expose detail to the client.
@@ -144,4 +203,10 @@ const server = createServer(async (req, res) => {
   res.writeHead(204, cors).end();
 });
 
-server.listen(PORT, () => console.log(`[collector] listening on :${PORT}, data in ${DATA_DIR}`));
+// Prune before accepting anything, then once a day.
+await prune();
+setInterval(prune, DAY_MS).unref();
+
+server.listen(PORT, () =>
+  console.log(`[collector] listening on :${PORT}, data in ${DATA_DIR}, retention ${RETENTION_DAYS} days`),
+);

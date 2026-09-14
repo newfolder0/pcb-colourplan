@@ -1,6 +1,6 @@
 # Privacy Notice - PCB Colour-Plan
 
-_Last updated: 2026-06-05_
+_Last updated: 2026-09-14_
 
 ## In short
 
@@ -30,9 +30,9 @@ component values, reference designators, part numbers, footprints, the board
 title/company/author fields, file names, and the generated PDF. None of this is
 sent off your device under any circumstances.
 
-The app stores two small flags in your browser's `localStorage` (not cookies,
-never transmitted): your acknowledgement of the start-up disclaimer
-(`cp_disclaimer_v2`) and your analytics choice (`cp_analytics_consent_v1`).
+The app stores one small flag in your browser's `localStorage` (not a cookie,
+never transmitted): your analytics choice (`cp_analytics_consent_v2`). It also
+records that you have seen the start-up notice.
 
 ## Anonymous usage statistics (hosted instance)
 
@@ -73,8 +73,8 @@ Content-Security-Policy keeps it confined to its own origin. _(If you reconfigur
 it to use a third-party processor, add that processor and a Data Processing
 Agreement here.)_
 
-**Retention:** raw events are deleted after 12 months; only aggregate counts are
-kept thereafter.
+**Retention:** raw events are deleted after 12 months; the collector prunes them
+itself, once a day. Only aggregate counts are kept after that.
 
 ## Your rights
 

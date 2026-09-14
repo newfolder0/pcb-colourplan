@@ -28,7 +28,11 @@ Standalone for testing:
 
 ```bash
 node collector/server.mjs            # listens on :8081, writes ./collector/data
+node collector/selftest.mjs          # retention, request contract, concurrent writes
 ```
+
+Environment: `PORT` (default 8081), `DATA_DIR`, `TELEMETRY_RETENTION_DAYS`
+(default 365).
 
 ## Output
 
@@ -52,5 +56,12 @@ jq -s 'map(.comp // 0) | add' collector/data/events.ndjson
 
 - This is a reference implementation. For higher volume, swap the NDJSON append
   for SQLite/Postgres; the privacy contract (no IP/UA/hash stored) must be kept.
-- Retention: prune `events.ndjson` to your stated policy (12 months) with a cron
-  job; aggregate counts can be kept indefinitely.
+- Retention is enforced by the collector itself. At start-up, and then once a
+  day, it deletes `events.ndjson` rows older than `TELEMETRY_RETENTION_DAYS`
+  (default 365, the "12 months" in the privacy notice). It rewrites the file
+  and swaps it in atomically. Rows it cannot parse are dropped too.
+  `uniques.json` totals are kept indefinitely. No cron job is needed; until
+  2026-09-14 the README asked for one, and none was ever set up on the hosted
+  instance.
+- All writes (append, uniques update, prune) run through one queue, so a
+  concurrent request can't lose a row or an increment.
