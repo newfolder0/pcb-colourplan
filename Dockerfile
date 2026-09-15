@@ -7,10 +7,10 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
-# Telemetry + consent wall toggle. Default '/collect' = the hosted build.
-# Build with --build-arg VITE_TELEMETRY_ENDPOINT="" for a telemetry-free,
-# wall-free, fully-local self-hosted instance.
-ARG VITE_TELEMETRY_ENDPOINT=/collect
+# Telemetry + consent wall toggle. Default empty = OFF: no wall, no /collect
+# calls - the fully-local self-hosted instance. The hosted build passes
+# --build-arg VITE_TELEMETRY_ENDPOINT=/collect (its deploy compose sets it).
+ARG VITE_TELEMETRY_ENDPOINT=
 ENV VITE_TELEMETRY_ENDPOINT=$VITE_TELEMETRY_ENDPOINT
 # Operator identity shown in the disclaimer / privacy notice (optional). Empty by
 # default so the open-source image ships with no operator contact details; the

@@ -3,10 +3,13 @@ services:
     build:
       context: .
       args:
-        # Telemetry + consent wall ON (the hosted setup with the collector below).
-        # For a fully-local, telemetry-free, wall-free self-hosted instance, set
-        # this to "" and delete the `collector` service + `depends_on`.
-        VITE_TELEMETRY_ENDPOINT: /collect
+        # Telemetry is OFF by default: no consent wall and no /collect calls, so
+        # this self-hosted copy sends nothing anywhere. To turn it on, put
+        # TELEMETRY_ENDPOINT=/collect in a .env next to this file and rebuild.
+        # Events then go only to the `collector` service below, on this same
+        # host. The CSP allows same-origin requests only, so they cannot reach
+        # anyone else's server.
+        VITE_TELEMETRY_ENDPOINT: ${TELEMETRY_ENDPOINT:-}
         # Operator identity for the disclaimer + GDPR/privacy notice. Set
         # CONTACT_EMAIL and DATA_CONTROLLER in a .env file next to this compose;
         # leave blank if you'd rather not show contact details.
@@ -30,7 +33,8 @@ services:
     depends_on:
       - collector
 
-  # Receives opt-in anonymous telemetry only. Not published to the host: it is
+  # Receives opt-in anonymous telemetry only, and sits idle unless
+  # TELEMETRY_ENDPOINT=/collect is set above. Not published to the host: it is
   # reachable solely via Caddy's same-origin /collect proxy (see Caddyfile).
   # Stores aggregate counts + event rows (no IP/User-Agent) under a named volume.
   collector:

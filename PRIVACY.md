@@ -12,7 +12,9 @@ _Last updated: 2026-09-14_
   of anonymous usage data (listed below). Using the hosted tool requires
   agreeing to this. If you'd rather not, the tool is open source - **self-host
   the identical container and nothing is collected at all** (see the repository
-  link shown when you decline, and `docker-compose.yml`).
+  link shown when you decline, and `docker-compose.yml`). A self-hosted build
+  has telemetry off unless its operator turns it on. Even then it reports only
+  to that operator's own server.
 - You can withdraw at any time from the **"Privacy & data"** link; because use of
   the hosted tool is conditioned on the data, withdrawing returns you to that
   choice (agree, or self-host).

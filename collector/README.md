@@ -15,6 +15,20 @@ usage events. It is intentionally minimal and privacy-preserving - see
 - Estimates **unique visitors** with a daily-rotating salted hash of IP+UA kept
   **only in memory**; the hash is never written to disk. Only aggregate counts
   and event rows (with no IP/UA/hash) are persisted.
+- **Abuse limits, in memory.** Each client gets `COLLECT_RATE_LIMIT` requests an
+  hour, then 429 with `Retry-After`. The number of tracked clients and visitor
+  hashes is capped, so the endpoint can't fill the disk or memory. The client is
+  the first `X-Forwarded-For` entry, so the proxy in front must pass the real
+  client address (see the `trusted_proxies` note in `../Caddyfile`).
+- Responses:
+  - 204: stored
+  - 400: malformed JSON
+  - 405: not a POST
+  - 413: over 1 KB
+  - 415: not JSON
+  - 422: unknown event
+  - 429: rate-limited
+  - 404: any other path
 
 ## Run
 
@@ -31,8 +45,11 @@ node collector/server.mjs            # listens on :8081, writes ./collector/data
 node collector/selftest.mjs          # retention, request contract, concurrent writes
 ```
 
-Environment: `PORT` (default 8081), `DATA_DIR`, `TELEMETRY_RETENTION_DAYS`
-(default 365).
+Environment:
+- `PORT`: default 8081
+- `DATA_DIR`
+- `TELEMETRY_RETENTION_DAYS`: default 365
+- `COLLECT_RATE_LIMIT`: requests per client per hour, default 300
 
 ## Output
 

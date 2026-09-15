@@ -1,5 +1,6 @@
 // Self-test for the telemetry collector: retention pruning, the request
-// contract, and that concurrent writes neither lose rows nor uniques.
+// contract, the per-client rate limit, and that concurrent writes neither lose
+// rows nor uniques.
 // Dependency-free, no network beyond loopback:
 //
 //   node collector/selftest.mjs
@@ -53,7 +54,13 @@ await writeFile(uniquesFile, JSON.stringify({ '2020-01-01': 7 }));
 // Only these variables reach the child, so nothing in the calling shell leaks in.
 const port = await freePort();
 const child = spawn(process.execPath, [join(here, 'server.mjs')], {
-  env: { PATH: process.env.PATH, PORT: String(port), DATA_DIR: dataDir, TELEMETRY_RETENTION_DAYS: '30' },
+  env: {
+    PATH: process.env.PATH,
+    PORT: String(port),
+    DATA_DIR: dataDir,
+    TELEMETRY_RETENTION_DAYS: '30',
+    COLLECT_RATE_LIMIT: '60',
+  },
   stdio: ['ignore', 'pipe', 'inherit'],
 });
 let log = '';
@@ -87,7 +94,7 @@ try {
   check('start-up prune keeps rows inside retention', start.some((l) => l.includes('"recent"')));
   check('start-up prune drops unreadable rows', start.length === 1);
   check('prune is logged with the retention in force', log.includes('pruned 2 event row(s) older than 30 days'));
-  check('start-up log states the retention', log.includes('retention 30 days'));
+  check('start-up log states the retention and rate limit', log.includes('retention 30 days, rate limit 60/client/hour'));
   check('prune leaves the per-day unique totals alone', (await uniques())['2020-01-01'] === 7);
 
   // ---- request contract ---------------------------------------------------
@@ -100,7 +107,10 @@ try {
   check('unknown event -> 422', (await post(JSON.stringify({ e: 'nope' }))).status === 422);
   check('non-JSON -> 415', (await post('e=app_open', { 'content-type': 'text/plain' })).status === 415);
   check('malformed JSON -> 400', (await post('{"e":')).status === 400);
-  check('GET /collect -> 404', (await fetch(`${base}/collect`)).status === 404);
+  const getCollect = await fetch(`${base}/collect`);
+  check('GET /collect -> 405 with Allow: POST', getCollect.status === 405 && getCollect.headers.get('allow') === 'POST');
+  check('any other path -> 404', (await fetch(`${base}/nope`)).status === 404);
+  check('oversized body -> 413', (await post(JSON.stringify({ e: 'app_open', v: 'x'.repeat(2000) }))).status === 413);
   check('unique counted for the first visitor today', (await uniques())[todayKey()] === 1);
 
   // ---- concurrency: the write queue ---------------------------------------
@@ -113,6 +123,24 @@ try {
   check('burst of 20 concurrent events all accepted', burst.every((r) => r.status === 204));
   check('no row lost under concurrency', (await rows()).length === before + 20);
   check('no unique-visitor increment lost under concurrency', (await uniques())[todayKey()] === 21);
+
+  // ---- per-client rate limit (COLLECT_RATE_LIMIT=60 above) ---------------
+  // Everything so far came from 127.0.0.1 with no X-Forwarded-For. These carry
+  // one, as the front door would, so each address starts with a fresh budget.
+  const bad = JSON.stringify({ e: 'nope' });
+  const clientA = { 'x-forwarded-for': '198.51.100.1' };
+  const budget = await Promise.all(Array.from({ length: 60 }, () => post(bad, clientA)));
+  check('rate limit: a client gets its full hourly budget', budget.every((r) => r.status === 422));
+  const over = await post(bad, clientA);
+  check(
+    'rate limit: the next request gets 429 with Retry-After',
+    over.status === 429 && Number(over.headers.get('retry-after')) > 0,
+  );
+  check('rate limit: other clients are unaffected', (await post(bad, { 'x-forwarded-for': '198.51.100.2' })).status === 422);
+  check(
+    'rate limit: keyed on the first X-Forwarded-For entry (the real client)',
+    (await post(bad, { 'x-forwarded-for': '198.51.100.1, 172.18.0.2' })).status === 429,
+  );
 } finally {
   child.kill();
   await once(child, 'exit').catch(() => {});

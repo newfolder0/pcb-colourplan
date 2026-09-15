@@ -27,12 +27,11 @@ and turned into a PDF entirely client-side - it never leaves your machine.
   hosted tool requires agreeing to a small amount of anonymous usage data
   (aggregate counts only - never any design data, no location, no browser/device,
   same-origin endpoint). Don't want that? **Self-host this container and it
-  collects nothing** - build with `VITE_TELEMETRY_ENDPOINT=""` (the default
-  `docker compose` build enables it; see [`docker-compose.yml`](docker-compose.yml)).
-  Exact field list and basis in [`PRIVACY.md`](PRIVACY.md).
+  collects nothing**: telemetry is off by default (see below). Exact field list
+  and basis in [`PRIVACY.md`](PRIVACY.md).
 - All dependencies are bundled locally (no CDN, no web fonts, no third-party
-  analytics). No cookies; the only client storage is two local flags (disclaimer
-  acknowledgement + your analytics choice) that never leave the device.
+  analytics). No cookies; the only client storage is one local flag (your
+  analytics choice) that never leaves the device.
 - **Strict Content-Security-Policy in the built app.** A `default-src 'self'`
   CSP is injected into `dist/index.html` at build time, so the same confinement
   applies whether you serve the bundle behind the bundled [`Caddyfile`](Caddyfile)
@@ -80,8 +79,19 @@ DNS at the VM, open ports 80 + 443, then:
 ```bash
 cp .env.example .env
 echo "DOMAIN=pcb.example.com" > .env   # your domain -> Caddy auto-provisions TLS
-docker compose up -d --build           # web (Caddy) + telemetry collector
+docker compose up -d --build           # web (Caddy); telemetry off
 ```
+
+> **Telemetry is off by default when you self-host.** A `docker compose` build
+> shows no consent wall and sends nothing anywhere.
+>
+> To turn on the anonymous usage stats the hosted instance uses, add
+> `TELEMETRY_ENDPOINT=/collect` to `.env` and rebuild. Events then go only to the
+> bundled `collector` service on your own host; the CSP allows same-origin
+> requests only.
+>
+> Building outside Docker (`npm run build`) keeps the source default, which is
+> **on**. Set `VITE_TELEMETRY_ENDPOINT=` to turn it off there.
 
 For a quick local run, leave `DOMAIN=:80` (the default) and open
 `http://127.0.0.1`. The web image is a multi-stage build (compile the static

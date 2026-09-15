@@ -15,8 +15,15 @@
 //     pruned at start-up and daily. No external cron to forget. The per-day
 //     unique-visitor totals are kept.
 //
+// Abuse limits, all in memory: a per-client hourly request cap
+// (COLLECT_RATE_LIMIT, default 300), and caps on how many clients and visitor
+// hashes are tracked, so the public endpoint cannot be turned into a disk- or
+// memory-filling flood.
+//
 // Deploy behind Caddy as a same-origin /collect (see ../Caddyfile), so the app
-// CSP can stay `connect-src 'self'`. Run: `node collector/server.mjs`.
+// CSP can stay `connect-src 'self'`. That Caddy must pass the real client in
+// X-Forwarded-For (its trusted_proxies setting), or every visitor shares one
+// rate-limit budget. Run: `node collector/server.mjs`.
 // Test: `node collector/selftest.mjs`.
 
 import { createServer } from 'node:http';
@@ -25,15 +32,22 @@ import { createHash, randomBytes } from 'node:crypto';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+const positiveInt = (raw, fallback) => (Number(raw) > 0 ? Math.round(Number(raw)) : fallback);
+
 const PORT = Number(process.env.PORT ?? 8081);
 const DATA_DIR = process.env.DATA_DIR ?? join(dirname(fileURLToPath(import.meta.url)), 'data');
 const EVENTS_FILE = join(DATA_DIR, 'events.ndjson');
 const UNIQUES_FILE = join(DATA_DIR, 'uniques.json');
 const MAX_BODY = 1024; // bytes - the payload is tiny; reject anything larger
-const RETENTION_DAYS = Number(process.env.TELEMETRY_RETENTION_DAYS) > 0
-  ? Math.round(Number(process.env.TELEMETRY_RETENTION_DAYS))
-  : 365;
-const DAY_MS = 24 * 60 * 60 * 1000;
+const RETENTION_DAYS = positiveInt(process.env.TELEMETRY_RETENTION_DAYS, 365);
+// Generous for real use (a handful of events per board), tight for a flood.
+const RATE_PER_HOUR = positiveInt(process.env.COLLECT_RATE_LIMIT, 300);
+// Past these, new clients are refused and uniques stop counting until the window
+// rolls over, rather than the maps growing without bound under a spread-out flood.
+const MAX_TRACKED_CLIENTS = 50_000;
+const MAX_SEEN_PER_DAY = 50_000;
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
 
 // Per-run secret so the daily visitor hash cannot be reproduced from stored data
 // (and rotates on restart). Combined with the date, never persisted.
@@ -41,6 +55,9 @@ const RUN_SALT = randomBytes(32);
 
 // In-memory set of today's visitor hashes (NEVER persisted). { date, set }.
 let today = { date: '', seen: new Set() };
+
+// In-memory request counts for the current hour, per client (NEVER persisted).
+let hits = { start: -Infinity, byClient: new Map() };
 
 const EVENTS = new Set(['app_open', 'board_processed', 'pdf_generated']);
 const FORMATS = new Set(['kicad', 'ipc2581', 'odbpp', 'unknown']);
@@ -77,6 +94,8 @@ function sanitize(raw) {
   return out;
 }
 
+// The first X-Forwarded-For entry is the client as seen by the outermost proxy.
+// The hosted front door sets it itself and ignores any value a client sends.
 function clientIp(req) {
   const xff = req.headers['x-forwarded-for'];
   if (typeof xff === 'string' && xff.length) return xff.split(',')[0].trim();
@@ -87,10 +106,22 @@ function dateKey(d = new Date()) {
   return d.toISOString().slice(0, 10);
 }
 
+/** Per-client fixed hourly window. Returns seconds to wait, or 0 if allowed. */
+function throttle(ip, now = Date.now()) {
+  if (now - hits.start >= HOUR_MS) hits = { start: now, byClient: new Map() };
+  const wait = Math.max(1, Math.ceil((hits.start + HOUR_MS - now) / 1000));
+  const n = (hits.byClient.get(ip) ?? 0) + 1;
+  if (n > RATE_PER_HOUR) return wait;
+  if (n === 1 && hits.byClient.size >= MAX_TRACKED_CLIENTS) return wait;
+  hits.byClient.set(ip, n);
+  return 0;
+}
+
 /** Count a unique visitor for today without persisting any identifier. */
 async function countUnique(ip, ua) {
   const date = dateKey();
   if (today.date !== date) today = { date, seen: new Set() };
+  if (today.seen.size >= MAX_SEEN_PER_DAY) return;
   const hash = createHash('sha256').update(RUN_SALT).update(date).update(ip).update(ua).digest('hex');
   if (today.seen.has(hash)) return; // already counted today
   today.seen.add(hash);
@@ -142,6 +173,7 @@ async function prune() {
   }
 }
 
+/** Read the body up to MAX_BODY bytes; rejects with status 413 beyond that. */
 async function readBody(req) {
   return new Promise((resolve, reject) => {
     let size = 0;
@@ -149,8 +181,12 @@ async function readBody(req) {
     req.on('data', (c) => {
       size += c.length;
       if (size > MAX_BODY) {
-        reject(new Error('too large'));
-        req.destroy();
+        const err = new Error('body too large');
+        err.status = 413;
+        // Stop reading but keep the socket open so the 413 can be delivered;
+        // the response closes the connection, which discards the rest.
+        req.pause();
+        reject(err);
         return;
       }
       chunks.push(c);
@@ -162,8 +198,19 @@ async function readBody(req) {
 
 const server = createServer(async (req, res) => {
   const cors = { 'Cache-Control': 'no-store' };
-  if (req.method !== 'POST' || (req.url ?? '').split('?')[0] !== '/collect') {
+  if ((req.url ?? '').split('?')[0] !== '/collect') {
     res.writeHead(404, cors).end();
+    return;
+  }
+  // The IP is used for the in-memory rate limit and the unstored daily hash only.
+  const ip = clientIp(req);
+  const wait = throttle(ip);
+  if (wait) {
+    res.writeHead(429, { ...cors, 'Retry-After': String(wait) }).end();
+    return;
+  }
+  if (req.method !== 'POST') {
+    res.writeHead(405, { ...cors, Allow: 'POST' }).end();
     return;
   }
   if (!String(req.headers['content-type'] ?? '').includes('application/json')) {
@@ -173,7 +220,11 @@ const server = createServer(async (req, res) => {
   let payload;
   try {
     payload = sanitize(JSON.parse(await readBody(req)));
-  } catch {
+  } catch (err) {
+    if (err && err.status === 413) {
+      res.writeHead(413, { ...cors, Connection: 'close' }).end();
+      return;
+    }
     res.writeHead(400, cors).end();
     return;
   }
@@ -184,7 +235,6 @@ const server = createServer(async (req, res) => {
 
   // IP + User-Agent are used ONLY for the unstored daily unique-visitor hash,
   // then discarded. The stored row is just a timestamp + the client payload.
-  const ip = clientIp(req);
   const ua = String(req.headers['user-agent'] ?? '');
   const row = { ts: new Date().toISOString(), ...payload };
 
@@ -208,5 +258,8 @@ await prune();
 setInterval(prune, DAY_MS).unref();
 
 server.listen(PORT, () =>
-  console.log(`[collector] listening on :${PORT}, data in ${DATA_DIR}, retention ${RETENTION_DAYS} days`),
+  console.log(
+    `[collector] listening on :${PORT}, data in ${DATA_DIR}, retention ${RETENTION_DAYS} days, ` +
+      `rate limit ${RATE_PER_HOUR}/client/hour`,
+  ),
 );

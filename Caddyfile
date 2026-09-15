@@ -4,8 +4,25 @@
 #   - a domain (e.g. pcb.example.com) -> automatic HTTPS via Let's Encrypt
 #   - ":80"                           -> plain HTTP, for local testing
 #
-# To receive Let's Encrypt expiry emails, add a global options block at the very
-# top of this file:   { email you@example.com }
+# To receive Let's Encrypt expiry emails, add `email you@example.com` to the
+# global options block below.
+
+# Trust X-Forwarded-For from proxies on private addresses.
+#
+# On the hosted VM this Caddy sits behind a shared front door on a private
+# docker network. Without this setting, Caddy discards the front door's
+# X-Forwarded-For, and every visitor reaches the collector carrying the front
+# door's IP. That turns the collector's per-client rate limit into one global
+# limit, and collapses the unique-visitor count to one per User-Agent.
+#
+# Nothing else in this file uses the client IP: there is no access control and
+# no logging. So the worst a spoofed header from a private address can do is
+# skew those two collector counters.
+{
+	servers {
+		trusted_proxies static private_ranges
+	}
+}
 
 {$SITE_ADDRESS} {
 	root * /srv
