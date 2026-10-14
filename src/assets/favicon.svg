@@ -1,1 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Hex nut"><rect width="64" height="64" rx="14" fill="#16a34a"/><path fill="#fff" stroke="#fff" stroke-width="4.8" stroke-linejoin="round" fill-rule="evenodd" d="M52.6 32 42.3 49.84 21.7 49.84 11.4 32 21.7 14.16 42.3 14.16Z M32 17.1a14.9 14.9 0 1 0 0 29.8 14.9 14.9 0 1 0 0-29.8Z"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" width="96" height="96" role="img" aria-label="Exoplanet">
+  <title>Exoplanet - favicon 16, filled star</title>
+  <rect width="96" height="96" rx="16" fill="#10141B"></rect>
+  <circle cx="41.99" cy="34" r="18.00" fill="#EFA83E"></circle>
+  <circle cx="48" cy="27.99" r="5.50" fill="#10141B"></circle>
+  <path d="M16 70 H27.99 L33.99 76 H49.99 L55.99 70 H80" fill="none" stroke="#F6F7F9" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path>
+</svg>
